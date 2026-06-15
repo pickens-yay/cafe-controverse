@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 Book Club Vote</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f5f0; color: #1a1a1a; min-height: 100vh; }
+  .page { display: none; max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .page.active { display: block; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .card { background: #fff; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: .75rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .book-row { display: flex; align-items: center; gap: 10px; }
+  .book-emoji { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; }
+  .book-info { flex: 1; min-width: 0; }
+  .book-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-author { font-size: 12px; color: #888; margin-top: 1px; }
+  .vote-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .vbtn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #ddd; background: #f7f5f0; cursor: pointer; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; color: #333; transition: background .12s; }
+  .vbtn:hover:not(:disabled) { background: #eee; }
+  .vbtn:disabled { opacity: .3; cursor: default; }
+  .vcount { font-size: 15px; font-weight: 600; min-width: 16px; text-align: center; }
+  .votes-pill { text-align: center; font-size: 13px; color: #666; margin: .75rem 0 1rem; padding: .5rem; background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .votes-pill b { color: #3d35a0; }
+  .btn { width: 100%; padding: .75rem; border-radius: 12px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: .5rem; transition: opacity .15s; font-family: inherit; }
+  .btn-primary { background: #534AB7; color: #fff; }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .4; cursor: default; }
+  .btn-outline { background: #fff; color: #333; border: 1.5px solid #ddd; }
+  .btn-outline:hover { background: #f7f5f0; }
+  .name-input { width: 100%; padding: .7rem .9rem; border-radius: 12px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; background: #fff; margin-bottom: .75rem; }
+  .name-input:focus { outline: none; border-color: #534AB7; }
+  /* results */
+  .result-card { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 14px; padding: .85rem 1rem; margin-bottom: .6rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .medal { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
+  .rinfo { flex: 1; min-width: 0; }
+  .rtitle { font-size: 14px; font-weight: 600; }
+  .rauthor { font-size: 12px; color: #888; }
+  .rbar-wrap { width: 72px; flex-shrink: 0; }
+  .rbar-bg { height: 5px; border-radius: 3px; background: #eee; overflow: hidden; }
+  .rbar { height: 5px; border-radius: 3px; background: #7F77DD; transition: width .4s; }
+  .rvotes { font-size: 11px; color: #999; margin-top: 3px; text-align: right; }
+  /* admin */
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #aaa; margin-bottom: .5rem; margin-top: 1.25rem; }
+  .input-row { display: flex; gap: 8px; margin-bottom: .5rem; }
+  .input-row input { flex: 1; padding: .6rem .8rem; border-radius: 10px; border: 1.5px solid #ddd; font-size: 13px; font-family: inherit; background: #fff; }
+  .input-row input:focus { outline: none; border-color: #534AB7; }
+  .add-btn { padding: .6rem .9rem; border-radius: 10px; border: 1.5px solid #ddd; background: #f7f5f0; font-size: 13px; font-family: inherit; cursor: pointer; white-space: nowrap; font-weight: 600; }
+  .add-btn:hover { background: #eee; }
+  .abook { display: flex; align-items: center; gap: 8px; background: #fff; padding: .6rem .85rem; border-radius: 10px; margin-bottom: .4rem; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .abook span { flex: 1; }
+  .xbtn { background: none; border: none; color: #bbb; font-size: 20px; cursor: pointer; line-height: 1; padding: 0 2px; }
+  .xbtn:hover { color: #e55; }
+  .notice { padding: .65rem .9rem; border-radius: 10px; font-size: 13px; margin-bottom: .75rem; }
+  .notice-ok { background: #eaf3de; color: #3B6D11; }
+  .notice-warn { background: #faeeda; color: #854F0B; }
+  .notice-err { background: #fcebeb; color: #A32D2D; }
+  /* home hero */
+  .hero { text-align: center; padding: 2.5rem 0 1.5rem; }
+  .hero-icon { font-size: 48px; margin-bottom: 1rem; }
+  .hero h1 { font-size: 26px; margin-bottom: .4rem; }
+  .hero .sub { font-size: 15px; margin-bottom: 1.75rem; }
+  .admin-link { background: none; border: none; font-size: 13px; color: #aaa; text-decoration: underline; cursor: pointer; margin-top: 1rem; display: block; width: 100%; text-align: center; font-family: inherit; }
+  /* pw screen */
+  .pw-box { background: #fff; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .pw-box p { font-size: 13px; color: #666; margin-bottom: .75rem; }
+  .pw-row { display: flex; gap: 8px; }
+  .pw-row input { flex: 1; padding: .6rem .8rem; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; }
+  .pw-row input:focus { outline: none; border-color: #534AB7; }
+  .pw-row button { padding: .6rem 1rem; border-radius: 10px; border: none; background: #534AB7; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  /* tabs */
+  .tabs { display: flex; gap: .4rem; margin-bottom: 1.25rem; background: #fff; border-radius: 12px; padding: .35rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .tab { flex: 1; padding: .5rem; border: none; background: none; border-radius: 9px; font-size: 13px; font-weight: 500; cursor: pointer; color: #888; font-family: inherit; transition: background .15s; }
+  .tab.on { background: #534AB7; color: #fff; }
+  /* status */
+  .sbadge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; margin-bottom: .75rem; }
+  .sopen { background: #eaf3de; color: #3B6D11; }
+  .sclosed { background: #faece7; color: #993C1D; }
+  /* share */
+  .share-msg { background: #fff; border-radius: 12px; padding: .85rem 1rem; font-size: 13px; color: #444; line-height: 1.65; white-space: pre-wrap; word-break: break-all; margin-bottom: .5rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  /* voter list empty state */
+  .empty { text-align: center; padding: 2rem 1rem; color: #aaa; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="pg-home" class="page active">
+  <div class="hero">
+    <div class="hero-icon">📚</div>
+    <h1>Book Club Vote</h1>
+    <p class="sub">Choose your next read together</p>
+    <button class="btn btn-primary" onclick="goVote()" style="max-width:280px;margin:0 auto .6rem;display:block">Cast my votes</button>
+    <button class="btn btn-outline" onclick="goResults()" style="max-width:280px;margin:0 auto;display:block">See top picks</button>
+    <button class="admin-link" onclick="goAdmin()">Admin access</button>
+  </div>
+</div>
+
+<!-- VOTE -->
+<div id="pg-vote" class="page">
+  <h1>Cast your votes</h1>
+  <p class="sub">You have 3 votes — spread them however you like</p>
+  <div id="vote-main">
+    <input id="voter-name" class="name-input" placeholder="Your name (to avoid double counting)" />
+    <div id="book-list-v"></div>
+    <div class="votes-pill">Votes left: <b id="votes-left">3</b></div>
+    <button class="btn btn-primary" id="vote-submit" onclick="submitVotes()" disabled>Submit my votes</button>
+    <button class="btn btn-outline" onclick="show('pg-home')">Back</button>
+  </div>
+  <div id="vote-done" style="display:none;text-align:center;padding:2rem 0">
+    <div style="font-size:40px;margin-bottom:.75rem">🎉</div>
+    <p style="font-size:17px;font-weight:600;margin-bottom:.5rem">Votes in!</p>
+    <p style="font-size:14px;color:#666;margin-bottom:1.5rem">The organiser will share the top picks once everyone has voted.</p>
+    <button class="btn btn-outline" onclick="show('pg-home')">Back to home</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="pg-results" class="page">
+  <h1>Top picks</h1>
+  <p class="sub">The books your club is most excited about</p>
+  <div id="results-list"></div>
+  <p style="font-size:12px;color:#bbb;text-align:center;margin-top:.75rem">Only the top 3 are shown 🤫</p>
+  <button class="btn btn-outline" style="margin-top:1rem" onclick="show('pg-home')">Back</button>
+</div>
+
+<!-- ADMIN -->
+<div id="pg-admin" class="page">
+  <h1>Admin</h1>
+  <div id="admin-pw">
+    <div class="pw-box" style="margin-top:.75rem">
+      <p>Enter the admin password to manage books and votes.</p>
+      <div class="pw-row">
+        <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()" />
+        <button onclick="checkPw()">Enter</button>
+      </div>
+      <div id="pw-err" class="notice notice-err" style="display:none;margin-top:.6rem">Wrong password</div>
+    </div>
+    <button class="btn btn-outline" onclick="show('pg-home')">Back</button>
+  </div>
+  <div id="admin-panel" style="display:none">
+    <div class="tabs">
+      <button class="tab on" id="t-books" onclick="atab('books')">Books</button>
+      <button class="tab" id="t-votes" onclick="atab('votes')">Live votes</button>
+      <button class="tab" id="t-share" onclick="atab('share')">Share</button>
+    </div>
+    <!-- books -->
+    <div id="ap-books">
+      <p style="font-size:13px;color:#666;margin-bottom:.75rem">Add all the books suggested for this round.</p>
+      <div class="input-row">
+        <input id="new-t" placeholder="Book title" onkeydown="if(event.key==='Enter')addBook()" />
+        <input id="new-a" placeholder="Author" style="max-width:130px" onkeydown="if(event.key==='Enter')addBook()" />
+        <button class="add-btn" onclick="addBook()">Add</button>
+      </div>
+      <div id="admin-booklist"></div>
+      <button class="btn btn-primary" style="margin-top:.75rem" onclick="saveBooks()">Save & open voting</button>
+      <button class="btn btn-outline" onclick="show('pg-home')">Back to home</button>
+    </div>
+    <!-- votes -->
+    <div id="ap-votes" style="display:none">
+      <div id="vstatus"></div>
+      <div id="vlist"></div>
+      <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
+        <button class="btn btn-outline" style="flex:1" onclick="toggleOpen()">Open / close voting</button>
+        <button class="btn btn-outline" style="flex:1;color:#c0392b" onclick="resetAll()">Reset everything</button>
+      </div>
+      <button class="btn btn-outline" onclick="show('pg-home')">Back to home</button>
+    </div>
+    <!-- share -->
+    <div id="ap-share" style="display:none">
+      <p style="font-size:13px;color:#666;margin-bottom:.75rem">Copy this message and paste it into your WhatsApp group.</p>
+      <div class="share-msg" id="share-msg"></div>
+      <button class="btn btn-primary" onclick="copyShare()">Copy WhatsApp message</button>
+      <div id="copy-ok" class="notice notice-ok" style="display:none;margin-top:.6rem">Copied! Paste it into WhatsApp 🎉</div>
+      <button class="btn btn-outline" onclick="show('pg-home')">Back to home</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMOJIS = ['📗','📘','📙','📕','📓','📔','📒','📃'];
+const MAX = 3;
+const PW = 'bookclub';
+const KEY = 'bcv4';
+
+let myVotes = {};
+let pendingBooks = [];
+
+function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e) {} }
+function load() { try { return JSON.parse(localStorage.getItem(KEY)) || def(); } catch(e) { return def(); } }
+function def() { return { books: [], votes: {}, open: false }; }
+
+function show(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goVote() {
+  const s = load();
+  myVotes = {};
+  s.books.forEach(b => myVotes[b.id] = 0);
+  document.getElementById('vote-main').style.display = '';
+  document.getElementById('vote-done').style.display = 'none';
+  document.getElementById('voter-name').value = '';
+  show('pg-vote');
+  renderVoteBooks();
+}
+
+function renderVoteBooks() {
+  const s = load();
+  const el = document.getElementById('book-list-v');
+  const leftEl = document.getElementById('votes-left');
+  const sub = document.getElementById('vote-submit');
+
+  if (!s.open || !s.books.length) {
+    el.innerHTML = '<div class="notice notice-warn">Voting isn\'t open yet — check back soon!</div>';
+    sub.disabled = true; leftEl.textContent = '—'; return;
+  }
+
+  function total() { return Object.values(myVotes).reduce((a, v) => a + v, 0); }
+
+  function render() {
+    const left = MAX - total();
+    leftEl.textContent = left;
+    sub.disabled = total() === 0;
+    el.innerHTML = '';
+    s.books.forEach(b => {
+      const mine = myVotes[b.id] || 0;
+      const d = document.createElement('div');
+      d.className = 'card';
+      d.innerHTML = `<div class="book-row">
+        <div class="book-emoji">${b.emoji}</div>
+        <div class="book-info"><div class="book-title">${b.title}</div><div class="book-author">${b.author}</div></div>
+        <div class="vote-controls">
+          <button class="vbtn" data-id="${b.id}" data-d="-1" ${mine > 0 ? '' : 'disabled'} aria-label="Remove vote">−</button>
+          <span class="vcount">${mine}</span>
+          <button class="vbtn" data-id="${b.id}" data-d="1" ${left > 0 ? '' : 'disabled'} aria-label="Add vote">+</button>
+        </div>
+      </div>`;
+      el.appendChild(d);
+    });
+    el.querySelectorAll('.vbtn').forEach(btn => {
+      btn.onclick = function() {
+        const id = this.dataset.id, delta = parseInt(this.dataset.d);
+        myVotes[id] = Math.max(0, (myVotes[id] || 0) + delta);
+        render();
+      };
+    });
+  }
+  render();
+}
+
+function submitVotes() {
+  const name = document.getElementById('voter-name').value.trim();
+  if (!name) { document.getElementById('voter-name').focus(); return; }
+  const s = load();
+  s.votes[name] = { ...myVotes, _ts: Date.now() };
+  save(s);
+  document.getElementById('vote-main').style.display = 'none';
+  document.getElementById('vote-done').style.display = '';
+}
+
+function goResults() {
+  show('pg-results');
+  renderResults();
+}
+
+function renderResults() {
+  const s = load();
+  const el = document.getElementById('results-list');
+  if (!s.books.length) { el.innerHTML = '<div class="empty">No books set up yet.</div>'; return; }
+  const totals = {};
+  s.books.forEach(b => totals[b.id] = 0);
+  Object.values(s.votes).forEach(v => s.books.forEach(b => totals[b.id] += (v[b.id] || 0)));
+  const top3 = s.books.slice().sort((a, b) => totals[b.id] - totals[a.id]).slice(0, 3);
+  const maxV = Math.max(...top3.map(b => totals[b.id]), 1);
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = '';
+  if (top3.every(b => totals[b.id] === 0)) {
+    el.innerHTML = '<div class="notice notice-warn">No votes yet — come back once people have voted.</div>'; return;
+  }
+  top3.forEach((b, i) => {
+    const pct = Math.round(totals[b.id] / maxV * 100);
+    const d = document.createElement('div'); d.className = 'result-card';
+    d.innerHTML = `<div class="medal">${medals[i]}</div>
+      <div class="rinfo"><div class="rtitle">${b.title}</div><div class="rauthor">${b.author}</div></div>
+      <div class="rbar-wrap">
+        <div class="rbar-bg"><div class="rbar" style="width:${pct}%"></div></div>
+        <div class="rvotes">${totals[b.id]} vote${totals[b.id] !== 1 ? 's' : ''}</div>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function goAdmin() {
+  show('pg-admin');
+  document.getElementById('admin-pw').style.display = '';
+  document.getElementById('admin-panel').style.display = 'none';
+  document.getElementById('pw').value = '';
+  document.getElementById('pw-err').style.display = 'none';
+}
+
+function checkPw() {
+  if (document.getElementById('pw').value === PW) {
+    document.getElementById('admin-pw').style.display = 'none';
+    document.getElementById('admin-panel').style.display = '';
+    pendingBooks = [...load().books];
+    renderAdminBooks();
+  } else {
+    document.getElementById('pw-err').style.display = '';
+  }
+}
+
+function atab(t) {
+  ['books','votes','share'].forEach(x => {
+    document.getElementById('t-'+x).classList.toggle('on', x === t);
+    document.getElementById('ap-'+x).style.display = x === t ? '' : 'none';
+  });
+  if (t === 'votes') renderAdminVotes();
+  if (t === 'share') renderShare();
+  if (t === 'books') renderAdminBooks();
+}
+
+function renderAdminBooks() {
+  const el = document.getElementById('admin-booklist');
+  el.innerHTML = '';
+  pendingBooks.forEach((b, i) => {
+    const d = document.createElement('div'); d.className = 'abook';
+    d.innerHTML = `<span>${b.emoji} <b>${b.title}</b> · <span style="color:#888">${b.author}</span></span>`;
+    const x = document.createElement('button'); x.className = 'xbtn'; x.textContent = '×';
+    x.onclick = () => { pendingBooks.splice(i, 1); renderAdminBooks(); };
+    d.appendChild(x); el.appendChild(d);
+  });
+}
+
+function addBook() {
+  const t = document.getElementById('new-t').value.trim();
+  const a = document.getElementById('new-a').value.trim();
+  if (!t) return;
+  pendingBooks.push({ title: t, author: a || 'Unknown', emoji: EMOJIS[pendingBooks.length % EMOJIS.length], id: 'b' + Date.now() });
+  document.getElementById('new-t').value = '';
+  document.getElementById('new-a').value = '';
+  renderAdminBooks();
+  document.getElementById('new-t').focus();
+}
+
+function saveBooks() {
+  if (pendingBooks.length < 2) { alert('Add at least 2 books first.'); return; }
+  const s = load();
+  s.books = pendingBooks;
+  s.open = true;
+  save(s);
+  atab('share');
+}
+
+function renderAdminVotes() {
+  const s = load();
+  document.getElementById('vstatus').innerHTML = `<span class="sbadge ${s.open ? 'sopen' : 'sclosed'}">${s.open ? '● Voting open' : '● Voting closed'}</span>`;
+  const el = document.getElementById('vlist');
+  if (!s.books.length) { el.innerHTML = '<div class="empty">No books yet.</div>'; return; }
+  const totals = {};
+  s.books.forEach(b => totals[b.id] = 0);
+  Object.values(s.votes).forEach(v => s.books.forEach(b => totals[b.id] += (v[b.id] || 0)));
+  const sorted = s.books.slice().sort((a, b) => totals[b.id] - totals[a.id]);
+  const maxV = Math.max(...sorted.map(b => totals[b.id]), 1);
+  const names = Object.keys(s.votes);
+  el.innerHTML = `<p style="font-size:12px;color:#999;margin-bottom:.6rem">${names.length} voter${names.length !== 1 ? 's' : ''}: ${names.join(', ') || 'none yet'}</p>`;
+  sorted.forEach(b => {
+    const pct = Math.round(totals[b.id] / maxV * 100);
+    const d = document.createElement('div'); d.className = 'result-card';
+    d.innerHTML = `<div class="medal">${b.emoji}</div>
+      <div class="rinfo"><div class="rtitle">${b.title}</div><div class="rauthor">${b.author}</div></div>
+      <div class="rbar-wrap">
+        <div class="rbar-bg"><div class="rbar" style="width:${pct}%"></div></div>
+        <div class="rvotes">${totals[b.id]} vote${totals[b.id] !== 1 ? 's' : ''}</div>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function toggleOpen() {
+  const s = load(); s.open = !s.open; save(s); renderAdminVotes();
+}
+
+function resetAll() {
+  if (!confirm('Reset all books and votes? This cannot be undone.')) return;
+  save(def()); pendingBooks = []; show('pg-home');
+}
+
+function renderShare() {
+  const url = window.location.href;
+  const msg = `📚 Time to vote on our next book club read!\n\nOpen this link on your phone:\n${url}\n\nYou get 3 votes — spread them however you like. Only the top 3 results will be shown, so no spoilers! 😊`;
+  document.getElementById('share-msg').textContent = msg;
+}
+
+function copyShare() {
+  const msg = document.getElementById('share-msg').textContent;
+  navigator.clipboard.writeText(msg).then(() => {
+    const ok = document.getElementById('copy-ok');
+    ok.style.display = ''; setTimeout(() => ok.style.display = 'none', 3000);
+  });
+}
+</script>
+</body>
+</html>
